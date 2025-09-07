@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoonLaunch - Create Meme Coin on Solana</title>
+    <meta name="description" content="Launch your own meme coin to the moon with MoonLaunch - the premier Solana token creator.">
+    <meta name="keywords" content="create meme coin, solana meme coin creator, launch a meme coin, moonlaunch, crypto token">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                        dark: '#181818',
+                        light: '#FFFFFF'
+                    }
+                }
+            }
+        }
+        
+        // Dark mode support
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+    </script>
+
+    <style>
+        .wallet-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 110%;
+            left: 0;
+            display: none;
+            padding: 8px 12px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            background: rgba(247, 247, 247, 0.22);
+            border-radius: 25px;
+            width: 100%;
+        }
+
+        .wallet-dropdown.connected:hover .logout-btn {
+            display: block;
+        }
+
+        .toggle {
+            width: 40px;
+            height: 20px;
+            border-radius: 10px;
+            background: #333;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .toggle[data-toggled="true"] {
+            background: #5D5CDE;
+        }
+
+        .toggle-marker {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: white;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s;
+        }
+
+        .toggle[data-toggled="true"] .toggle-marker {
+            left: 22px;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #666;
+            border-radius: 4px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .checkbox[data-checked="true"] {
+            background: #5D5CDE;
+            border-color: #5D5CDE;
+        }
+
+        .checkbox-marker {
+            display: none;
+            color: white;
+            font-size: 14px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .checkbox[data-checked="true"] .checkbox-marker {
+            display: block;
+        }
+
+        .checkbox-marker::after {
+            content: '✓';
+        }
+
+        .modal {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.76);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #181818;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 750px;
+            position: relative;
+            text-align: center;
+            color: white;
+        }
+
+        .modal-close {
+            position: absolute;
+            right: 15px;
+            top: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .address-container {
+            display: flex;
+            align-items: center;
+            background: rgba(247, 247, 247, 0.22);
+            padding: 10px;
+            border-radius: 25px;
+            margin-top: 10px;
+            color: white;
+        }
+
+        .copy-btn {
+            margin-left: auto;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: white;
+        }
+
+        .loader-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            display: none;
+        }
+
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid #5D5CDE;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+
+<body class="bg-white dark:bg-dark text-gray-900 dark:text-white min-h-screen">
+    <div id="root">
+        <!-- Navigation -->
+        <div class="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+            <a class="flex items-center space-x-3" href="/">
+                <div class="w-10 h-10 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+                    <span class="text-white font-bold text-xl">🚀</span>
+                </div>
+                <span class="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">MoonLaunch</span>
+            </a>
+            
+            <nav class="hidden md:flex space-x-8">
+                <a class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors" href="/">Home</a>
+                <a class="text-primary font-medium" href="">Create Token</a>
+                <a class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors" href="/portfolio">Liquidity Pool</a>
+                <a class="text-gray-600 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white transition-colors" href="https://raydium.io/swap" target="_blank">Manage Liquidity</a>
+            </nav>
+            
+            <div onclick="openModal()" class="wallet-dropdown">
+                <button class="bg-primary text-white px-6 py-2 rounded-full hover:bg-purple-700 transition-colors">
+                    Connect Wallet
+                </button>
+                <div class="logout-btn text-center text-white">Log out</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="max-w-4xl mx-auto p-6">
+            <div class="text-center mb-12">
+                <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                    🚀 Solana Token Creator
+                </h1>
+                <p class="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+                    <span class="block">Launch your token to the moon effortlessly in seconds.</span>
+                    <span class="block mt-2">Reach the cosmos and scale without limits!</span>
+                </p>
+            </div>
+
+            <form onsubmit="event.preventDefault(); openModal();" class="bg-gray-50 dark:bg-gray-800 rounded-3xl p-8 shadow-lg">
+                <!-- Basic Token Info -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Token Name *</label>
+                        <input 
+                            placeholder="Ex: Moon Coin" 
+                            class="w-full text-base px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent" 
+                            type="text" 
+                            name="name"
+                        >
+                        <span class="text-sm text-gray-500 mt-1 block">Max 32 characters in your name</span>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Token Symbol *</label>
+                        <input 
+                            placeholder="Ex: MOON" 
+                            class="w-full text-base px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent" 
+                            type="text" 
+                            name="symbol"
+                        >
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Decimals *</label>
+                        <input 
+                            placeholder="Ex: 9" 
+                            class="w-full text-base px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent" 
+                            type="number" 
+                            name="decimals" 
+                            value="9"
+                        >
+                        <span class="text-sm text-gray-500 mt-1 block">Change the number of decimals for your token</span>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Supply *</label>
+                        <input 
+                            placeholder="Ex: 1000000000" 
+                            class="w-full text-base px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent" 
+                            type="number" 
+                            name="supply" 
+                            value="1000000"
+                        >
+                        <span class="text-sm text-gray-500 mt-1 block">The initial number of available tokens that will be created in your wallet</span>
+                    </div>
+                </div>
+
+                <!-- Logo Upload -->
+                <div class="mb-8">
+                    <label class="block text-sm font-medium mb-2">Logo *</label>
+                    <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center hover:border-primary transition-colors">
+                        <div class="img-input-wrapper">
+                            <span class="material-symbols-rounded text-4xl text-gray-400 mb-2 block">upload</span>
+                            <p class="text-lg font-medium mb-1">Drag and drop here to upload</p>
+                            <p class="text-sm text-gray-500">.png, .jpg 1000x1000 px</p>
+                            <input accept=".png, .jpg, .jpeg" class="form-img absolute inset-0 w-full h-full opacity-0 cursor-pointer" type="file">
+                        </div>
+                    </div>
+                    <span class="text-sm text-gray-500 mt-2 block">Add logo for your token or use AI to Generate one for you!</span>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-8">
+                    <label class="block text-sm font-medium mb-2">Description *</label>
+                    <textarea 
+                        placeholder="Describe your token's mission to the moon..." 
+                        class="w-full text-base px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent h-32 resize-none" 
+                        name="description"
+                    ></textarea>
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-600 my-8"></div>
+
+                <!-- Optional Features -->
+                <div class="space-y-6 mb-8">
+                    <!-- Creator Info Toggle -->
+                    <div class="toggle-section">
+                        <div class="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <div class="flex items-center space-x-4">
+                                <div class="toggle" data-toggled="false">
+                                    <input id="creator.is_enabled" style="display: none;" type="checkbox" name="creator.is_enabled">
+                                    <div class="toggle-marker"></div>
+                                </div>
+                                <div>
+                                    <span class="font-medium">Creator's Info (Optional)</span>
+                                    <span class="bg-primary text-white text-xs px-2 py-1 rounded-full ml-2">NEW</span>
+                                </div>
+                            </div>
+                            <span class="text-primary font-medium">+0.05 SOL</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">Change the information of the creator in the metadata.</p>
+                    </div>
+
+                    <!-- Social Links Toggle -->
+                    <div class="toggle-section">
+                        <div class="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <div class="flex items-center space-x-4">
+                                <div class="toggle" data-toggled="false">
+                                    <input id="social_links.is_enabled" style="display: none;" type="checkbox" name="social_links.is_enabled">
+                                    <div class="toggle-marker"></div>
+                                </div>
+                                <span class="font-medium">Add Social Links & Tags</span>
+                            </div>
+                            <span class="text-primary font-medium">+0.05 SOL</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">Add links to your token metadata.</p>
+                    </div>
+
+                    <!-- Liquidity Pool Toggle -->
+                    <div class="toggle-section">
+                        <div class="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <div class="flex items-center space-x-4">
+                                <div class="toggle" data-toggled="false">
+                                    <input id="liquidity_pool.is_enabled" style="display: none;" type="checkbox" name="liquidity_pool.is_enabled">
+                                    <div class="toggle-marker"></div>
+                                </div>
+                                <span class="font-medium">Moon Liquidity Pool</span>
+                            </div>
+                            <span class="text-green-500 font-medium">+0 SOL (FREE)</span>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">Full access to the liquidity pool.</p>
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-200 dark:border-gray-600 my-8"></div>
+
+                <!-- Revoke Authorities -->
+                <div class="mb-8">
+                    <h3 class="text-xl font-semibold mb-4">Revoke Authorities (Investor's Booster)</h3>
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <div class="flex items-center space-x-4">
+                                <div class="checkbox" data-checked="true">
+                                    <input id="authorities.revoke_freeze" style="display: none;" type="checkbox" name="authorities.revoke_freeze" checked="">
+                                    <div class="checkbox-marker"></div>
+                                </div>
+                                <div>
+                                    <div class="font-medium">Revoke Freeze</div>
+                                    <div class="text-sm text-gray-500">No one will be able to freeze holders' token accounts anymore</div>
+                                </div>
+                            </div>
+                            <span class="text-primary font-medium">+0.05 SOL</span>
+                        </div>
+
+                        <div class="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <div class="flex items-center space-x-4">
+                                <div class="checkbox" data-checked="true">
+                                    <input id="authorities.revoke_mint" style="display: none;" type="checkbox" name="authorities.revoke_mint">
+                                    <div class="checkbox-marker"></div>
+                                </div>
+                                <div>
+                                    <div class="font-medium">Revoke Mint</div>
+                                    <div class="text-sm text-gray-500">No one will be able to create more tokens anymore</div>
+                                </div>
+                            </div>
+                            <span class="text-primary font-medium">+0.05 SOL</span>
+                        </div>
+
+                        <div class="flex justify-between items-center p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                            <div class="flex items-center space-x-4">
+                                <div class="checkbox" data-checked="true">
+                                    <input id="authorities.revoke_update" style="display: none;" type="checkbox" name="authorities.revoke_update">
+                                    <div class="checkbox-marker"></div>
+                                </div>
+                                <div>
+                                    <div class="font-medium">Revoke Update</div>
+                                    <div class="text-sm text-gray-500">No one will be able to modify token metadata anymore</div>
+                                </div>
+                            </div>
+                            <span class="text-primary font-medium">+0.05 SOL</span>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-4">Solana Token has 3 authorities: Freeze Authority, Mint Authority, and Update Authority. Revoke them to attract more investors.</p>
+                </div>
+
+                <!-- Token Recipient -->
+                <div class="border border-gray-200 dark:border-gray-600 rounded-2xl p-6 mb-8">
+                    <div>
+                        <label class="block text-lg font-medium mb-3">Enter token recipient *</label>
+                        <input 
+                            placeholder="Enter address who will be the receiver of the token (owner)" 
+                            class="w-full text-base px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:ring-2 focus:ring-primary focus:border-transparent" 
+                            type="text" 
+                            name="recipient"
+                        >
+                    </div>
+
+                    <!-- Submit Section -->
+                    <div class="mt-8 text-center">
+                        <button type="submit" class="bg-gradient-to-r from-purple-600 to-blue-600 text-white text-xl font-semibold px-12 py-4 rounded-full hover:from-purple-700 hover:to-blue-700 transition-all shadow-lg hover:shadow-xl">
+                            🚀 Launch to the Moon
+                        </button>
+                        <div class="mt-4 flex justify-center items-center space-x-4">
+                            <span class="text-lg font-medium">Total Fees:</span>
+                            <span class="fees-original text-lg text-gray-500 line-through">0.30 SOL</span>
+                            <span class="fees-discounted text-2xl font-bold text-primary">0.15 SOL</span>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Footer -->
+        <footer class="border-t border-gray-200 dark:border-gray-700 p-6 mt-12">
+            <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center">
+                <div class="flex items-center space-x-3 mb-4 md:mb-0">
+                    <div class="w-8 h-8 bg-gradient-to-r from-purple-600 to-blue-600 rounded-lg flex items-center justify-center">
+                        <span class="text-white font-bold">🚀</span>
+                    </div>
+                    <span class="text-xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">MoonLaunch</span>
+                </div>
+                <div class="text-center">
+                    <div class="text-sm text-gray-500">© moonlaunch 2025</div>
+                    <div class="flex space-x-4 mt-2">
+                        <a href="/terms" class="text-sm text-gray-500 hover:text-gray-700">Terms of Service</a>
+                        <span class="text-gray-300">|</span>
+                        <a href="/privacy" class="text-sm text-gray-500 hover:text-gray-700">Privacy Policy</a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="feeModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="loader-overlay" id="loaderOverlay">
+                <div class="loader"></div>
+            </div>
+            <span id="modalClose" class="modal-close">&times;</span>
+            <h2 class="text-2xl font-bold mb-4 flex items-center justify-center">
+                <span class="mr-2">💰</span> Payment
+            </h2>
+            <p class="mb-4">Send <span id="modalFeeAmount" class="font-bold text-primary">0.15 SOL</span> to the following address. After successful transaction click "Check transaction".</p>
+            <div class="address-container">
+                <span id="modalAddress" class="break-all">GRtPb5JhLqxAEwTNv97SvadTxzxk98AeezoZvK8BSDHF</span>
+                <button id="copyButton" class="copy-btn">
+                    <span class="material-symbols-rounded">content_copy</span>
+                </button>
+            </div>
+            <button id="checkTransactionBtn" class="bg-primary text-white px-8 py-3 rounded-full hover:bg-purple-700 transition-colors mt-6">
+                Check transaction
+            </button>
+        </div>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="congratulationModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="loader-overlay" id="loaderOverlay1">
+                <div class="loader"></div>
+            </div>
+            <span id="modalClose1" class="modal-close">&times;</span>
+            <h2 class="text-2xl font-bold mb-4 flex items-center justify-center">
+                <span class="mr-2">🎉</span> Congratulations
+            </h2>
+            <p class="mb-4">Your token has been successfully launched to the moon!</p>
+            <div class="address-container">
+                <span id="modalAddress1" class="break-all">Your token address will appear here</span>
+                <button id="copyButton1" class="copy-btn">
+                    <span class="material-symbols-rounded">content_copy</span>
+                </button>
+            </div>
+            <button id="okayBtn" class="bg-primary text-white px-8 py-3 rounded-full hover:bg-purple-700 transition-colors mt-6">
+                Awesome!
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Modal functionality
+        function openModal() {
+            document.getElementById('feeModal').style.display = 'flex';
+            document.getElementById('modalFeeAmount').textContent = '0.15 SOL';
+            document.getElementById('modalAddress').textContent = 'GRtPb5JhLqxAEwTNv97SvadTxzxk98AeezoZvK8BSDHF';
+        }
+
+        // Close modal functionality
+        document.getElementById('modalClose').onclick = function() {
+            document.getElementById('feeModal').style.display = 'none';
+        }
+
+        document.getElementById('modalClose1').onclick = function() {
+            document.getElementById('congratulationModal').style.display = 'none';
+        }
+
+        // Copy address functionality
+        document.getElementById('copyButton').onclick = function() {
+            const address = document.getElementById('modalAddress').textContent;
+            navigator.clipboard.writeText(address).then(() => {
+                this.innerHTML = '<span class="material-symbols-rounded">check</span>';
+                setTimeout(() => {
+                    this.innerHTML = '<span class="material-symbols-rounded">content_copy</span>';
+                }, 2000);
+            });
+        }
+
+        document.getElementById('copyButton1').onclick = function() {
+            const address = document.getElementById('modalAddress1').textContent;
+            navigator.clipboard.writeText(address).then(() => {
+                this.innerHTML = '<span class="material-symbols-rounded">check</span>';
+                setTimeout(() => {
+                    this.innerHTML = '<span class="material-symbols-rounded">content_copy</span>';
+                }, 2000);
+            });
+        }
+
+        // Check transaction functionality
+        document.getElementById('checkTransactionBtn').onclick = function() {
+            document.getElementById('loaderOverlay').style.display = 'flex';
+            
+            // Simulate transaction checking
+            setTimeout(() => {
+                document.getElementById('loaderOverlay').style.display = 'none';
+                document.getElementById('feeModal').style.display = 'none';
+                document.getElementById('congratulationModal').style.display = 'flex';
+                
+                // Generate a mock token address
+                const mockTokenAddress = 'MOON' + Math.random().toString(36).substr(2, 40).toUpperCase();
+                document.getElementById('modalAddress1').textContent = mockTokenAddress;
+            }, 3000);
+        }
+
+        document.getElementById('okayBtn').onclick = function() {
+            document.getElementById('congratulationModal').style.display = 'none';
+        }
+
+        // Toggle functionality
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle toggles
+            document.querySelectorAll('.toggle').forEach(toggle => {
+                toggle.addEventListener('click', () => {
+                    const isToggled = toggle.getAttribute('data-toggled') === 'true';
+                    toggle.setAttribute('data-toggled', !isToggled);
+                    const checkbox = toggle.querySelector('input');
+                    if (checkbox) checkbox.checked = !isToggled;
+                });
+            });
+
+            // Handle checkboxes
+            document.querySelectorAll('.checkbox').forEach(checkbox => {
+                checkbox.addEventListener('click', () => {
+                    const isChecked = checkbox.getAttribute('data-checked') === 'true';
+                    checkbox.setAttribute('data-checked', !isChecked);
+                    const input = checkbox.querySelector('input');
+                    if (input) input.checked = !isChecked;
+                });
+            });
+
+            // File upload preview
+            const fileInput = document.querySelector('.form-img');
+            fileInput.addEventListener('change', () => {
+                const file = fileInput.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const imgSrc = event.target.result;
+                        const wrapper = fileInput.closest('.img-input-wrapper');
+                        wrapper.innerHTML = `<img src="${imgSrc}" alt="Uploaded Logo" class="max-w-full max-h-64 mx-auto rounded-lg">`;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const feeModal = document.getElementById('feeModal');
+            const congratulationModal = document.getElementById('congratulationModal');
+            
+            if (event.target == feeModal) {
+                feeModal.style.display = 'none';
+            }
+            if (event.target == congratulationModal) {
+                congratulationModal.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>
